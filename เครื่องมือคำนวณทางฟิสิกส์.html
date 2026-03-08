@@ -1,0 +1,810 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>เครื่องมือคำนวณทางฟิสิกส์</title>
+<style>
+:root{
+  --bg:#f6fbff;
+  --card:#ffffff;
+  --muted:#6b7280;
+  --primary:#005f99;
+  --accent:#ff6a00;
+  --radius:12px;
+  --shadow: 0 8px 24px rgba(3,57,108,0.08);
+  --max-width:1200px;
+  --success:#0b6b2e;
+}
+*{box-sizing:border-box}
+html,body{height:100%; margin:0; background:linear-gradient(180deg,#f3f9ff,#f6fbff); color:#0b1320}
+.container{max-width:var(--max-width); margin:20px auto; padding:0 18px; font-family:"Sarabun","Noto Sans Thai",system-ui,-apple-system,"Segoe UI",Roboto,Arial}
+.header{display:flex; align-items:center; gap:16px; justify-content:space-between; margin-bottom:12px}
+.title{font-size:20px;font-weight:700;margin:0}
+.subtitle{margin:0;color:var(--muted);font-size:13px}
+
+/* Top nav */
+.navbar{display:flex; gap:8px; flex-wrap:wrap; margin:14px 0 18px}
+.cat-btn{padding:8px 14px;border-radius:999px;border:1px solid rgba(0,0,0,0.06); background:#fff; cursor:pointer; color:var(--primary); font-weight:700; font-size:13px; box-shadow:0 6px 18px rgba(0,0,0,0.03);}
+.cat-btn.active{background:linear-gradient(90deg,var(--primary),var(--accent)); color:#fff;}
+
+/* Sections */
+.sections{display:flex; flex-direction:column; gap:18px}
+section.module{background:var(--card); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow); border:1px solid rgba(5,36,63,0.03)}
+section.module h2{margin:0 0 8px 0; color:var(--primary); font-size:18px}
+section.module p.lead{margin:0 0 12px 0; color:var(--muted); font-size:13px}
+
+/* Tools grid */
+.tools-grid{display:grid; grid-template-columns: repeat(2, 1fr); gap:14px}
+.tool-card{background:linear-gradient(180deg,#ffffff,#fbfdff); border-radius:10px; padding:12px; border:1px solid rgba(0,0,0,0.04)}
+.tool-card h3{margin:0 0 8px 0; color:#043b6b; font-size:15px}
+.formula{background:#fff8ec;border-left:4px solid var(--accent); padding:8px;border-radius:8px; font-size:13px; color:#5b3b00; margin-bottom:10px}
+.field{display:flex; flex-direction:column; margin-bottom:8px}
+label{font-size:13px; color:#123; margin-bottom:6px}
+input[type="number"], select, input[type="text"]{padding:8px 10px; border-radius:8px; border:1px solid #e6eef6; font-size:14px;}
+.center-row{display:flex; justify-content:center; margin-top:10px}
+button.calc{padding:10px 18px; border-radius:10px; border:0; cursor:pointer; color:#fff; font-weight:800; background:linear-gradient(90deg,var(--primary),var(--accent));}
+.result{margin-top:10px;padding:10px;border-radius:8px;background:rgba(0,95,153,0.05); font-weight:700}
+.muted{color:var(--muted); font-size:13px}
+.small{font-size:12px;color:var(--muted)}
+
+/* ERROR style (แดง) */
+.result.error{ background:rgba(176,0,32,0.06); color:#b00020; border:1px solid rgba(176,0,32,0.12); font-weight:800; }
+
+/* Credit block */
+.credit{
+  margin-top:28px;
+  padding:20px;
+  background:var(--card);
+  border-radius:12px;
+  box-shadow:var(--shadow);
+  text-align:center;
+  border:1px solid rgba(0,0,0,0.04);
+}
+.credit h2{color:var(--primary); margin:0 0 10px 0; font-size:18px}
+.credit p{margin:4px 0; font-size:15px;}
+
+/* responsive */
+@media (max-width:1100px){ .tools-grid{grid-template-columns:1fr} }
+
+/* Trajectory and Ray diagram */
+.graph-wrap{border-radius:8px; overflow:hidden; border:1px solid rgba(0,95,153,0.06); background:linear-gradient(180deg,#eaf6ff,#fff)}
+.svg-full{width:100%; height:260px; display:block}
+
+/* back to top */
+.backtop{position:fixed; right:18px; bottom:18px; background:var(--primary); color:white; border-radius:10px; padding:10px 12px; cursor:pointer; box-shadow:0 12px 30px rgba(0,95,153,0.12)}
+
+/* small helpers */
+.note{font-size:13px;color:var(--muted)}
+.kv{font-weight:700;color:var(--primary)}
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1 class="title">เครื่องมือคำนวณทางฟิสิกส์</h1>
+        <p class="subtitle">โปรดป้อนค่าด้วยหน่วย SI: เมตร (m), กิโลกรัม (kg), วินาที (s), แอมแปร์ (A), โวลต์ (V)</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="small muted">หน่วยในผลลัพธ์จะแสดงเป็น ภาษาไทย (ตัวย่ออังกฤษ)</div>
+      </div>
+    </div>
+
+    <nav class="navbar" id="navbar">
+      <button class="cat-btn active" data-target="mechanics">เครื่องกลพื้นฐาน</button>
+      <button class="cat-btn" data-target="projectile">การเคลื่อนที่โพรเจกไทล์</button>
+      <button class="cat-btn" data-target="circuits">วงจรไฟฟ้า</button>
+      <button class="cat-btn" data-target="resistor">รหัสสีตัวต้านทาน 4 แถบ</button>
+      <button class="cat-btn" data-target="momentum">โมเมนตัมและการชน</button>
+      <button class="cat-btn" data-target="circular">การเคลื่อนที่แบบวงกลม</button>
+      <button class="cat-btn" data-target="optics">ออปติกส์ (เลนส์)</button>
+      <button class="cat-btn" data-target="energy">งานและพลังงาน</button>
+      <button class="cat-btn" data-target="gases">สมบัติแก๊ส</button>
+      <button class="cat-btn" data-target="gravity">แรงโน้มถ่วงบนดาว</button>
+    </nav>
+
+    <div class="sections">
+
+      <!-- MECHANICS -->
+      <section class="module" id="mechanics">
+        <h2>เครื่องกลพื้นฐาน</h2>
+        <p class="lead">รวมระบบคาน ระบบรอก ระนาบเอียง ล้อ-เพลา ลิ่ม และสกรู พร้อมสมการและช่องป้อนพารามิเตอร์</p>
+
+        <div class="tools-grid">
+          <div class="tool-card" id="leverCard">
+            <h3>การวิเคราะห์สมดุลของคาน</h3>
+            <div class="formula">สมดุลโมเมนต์: F₁·L₁ = F₂·L₂ ⇒ F₂ = (L₁/L₂)·F₁</div>
+            <div class="field"><label>แรง F₁ (นิวตัน, N)</label><input id="leverF1" type="number" step="any" value="10"></div>
+            <div class="field"><label>แขนแรง L₁ (เมตร, m)</label><input id="leverL1" type="number" step="any" value="0.5"></div>
+            <div class="field"><label>แขนแรง L₂ (เมตร, m)</label><input id="leverL2" type="number" step="any" value="1"></div>
+            <div class="center-row"><button class="calc" onclick="calcLever()">ประมวลผล</button></div>
+            <div id="leverOut" class="result" aria-live="polite"></div>
+          </div>
+
+          <div class="tool-card" id="pulleyCard">
+            <h3>ระบบรอกเดี่ยว</h3>
+            <div class="formula">รอกตายตัว: ไม่เพิ่มอัตราทด (เปลี่ยนทิศทางแรง)<br>รอกเคลื่อนที่ (อุดมคติ): แรงยก F ≈ W/2</div>
+            <div class="field"><label>แรงหรือน้ำหนัก W (นิวตัน, N)</label><input id="pulleyW" type="number" step="any" value="100"></div>
+            <div class="field"><label>ชนิดรอก</label>
+              <select id="pulleyKind"><option value="ตายตัว">ตายตัว</option><option value="เคลื่อนที่">เคลื่อนที่</option></select>
+            </div>
+            <div class="center-row"><button class="calc" onclick="calcPulley()">ประมวลผล</button></div>
+            <div id="pulleyOut" class="result"></div>
+          </div>
+
+          <div class="tool-card" id="inclinedCard">
+            <h3>ระนาบเอียง</h3>
+            <div class="formula">แรงตามระนาบ: F = m·g·sinθ (เมื่อ g = ค่าความเร่งโน้มถ่วง)</div>
+            <div class="field"><label>มวล m (กิโลกรัม, kg)</label><input id="inclineM" type="number" step="any" value="5"></div>
+            <div class="field"><label>มุมเอียง θ (องศา, °)</label><input id="inclineTheta" type="number" step="any" value="30"></div>
+            <div class="center-row"><button class="calc" onclick="calcInclined()">ประมวลผล</button></div>
+            <div id="inclinedOut" class="result"></div>
+          </div>
+
+          <div class="tool-card" id="wheelCard">
+            <h3>ล้อและเพลา</h3>
+            <div class="formula">อัตราทดเชิงกล: MA = R / r (R = รัศมีล้อ, r = รัศมีเพลา)</div>
+            <div class="field"><label>รัศมีล้อ R (เมตร, m)</label><input id="wheelR" type="number" step="any" value="0.2"></div>
+            <div class="field"><label>รัศมีเพลา r (เมตร, m)</label><input id="wheelr" type="number" step="any" value="0.02"></div>
+            <div class="center-row"><button class="calc" onclick="calcWheel()">ประมวลผล</button></div>
+            <div id="wheelOut" class="result"></div>
+          </div>
+
+          <div class="tool-card" id="wedgeCard">
+            <h3>ลิ่ม</h3>
+            <div class="formula">อัตราทดโดยประมาณ: MA ≈ L / t (L = ความยาวฐาน, t = ความสูง)</div>
+            <div class="field"><label>ความยาวฐาน L (เมตร, m)</label><input id="wedgeL" type="number" step="any" value="0.25"></div>
+            <div class="field"><label>ความสูง t (เมตร, m)</label><input id="wedget" type="number" step="any" value="0.02"></div>
+            <div class="center-row"><button class="calc" onclick="calcWedge()">ประมวลผล</button></div>
+            <div id="wedgeOut" class="result"></div>
+          </div>
+
+          <div class="tool-card" id="screwCard">
+            <h3>สกรู</h3>
+            <div class="formula">อัตราทดโดยประมาณ: MA ≈ (2π·r) / p (p = ระยะต่อเกลียว)</div>
+            <div class="field"><label>รัศมีมือจับ r (เมตร, m)</label><input id="screwR" type="number" step="any" value="0.01"></div>
+            <div class="field"><label>ระยะต่อรอบเกลียว p (เมตร, m)</label><input id="screwP" type="number" step="any" value="0.002"></div>
+            <div class="center-row"><button class="calc" onclick="calcScrew()">ประมวลผล</button></div>
+            <div id="screwOut" class="result"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PROJECTILE -->
+      <section class="module" id="projectile">
+        <h2>การเคลื่อนที่แบบโพรเจกไทล์</h2>
+        <p class="lead">สมการพื้นฐาน: vₓ = v₀ cosθ , vᵧ = v₀ sinθ ; ระยะทาง R = v₀² sin(2θ)/g ; เวลาในอากาศ T = 2 v₀ sinθ / g ; ความสูงสูงสุด hₘₐₓ = vᵧ²/(2g)</p>
+
+        <div class="tools-grid">
+          <div class="tool-card">
+            <h3>พารามิเตอร์เริ่มต้น</h3>
+            <div class="field"><label>ความเร็วเริ่มต้น v₀ (เมตรต่อวินาที, m/s)</label><input id="projV0" type="number" step="any" value="20"></div>
+            <div class="field"><label>มุม θ (องศา, °)</label><input id="projTheta" type="number" step="any" value="45"></div>
+            <div class="field"><label>ค่าความเร่งโน้มถ่วง g (m/s²)</label>
+              <select id="projG"><option value="9.81">โลก — 9.81</option><option value="1.62">ดวงจันทร์ — 1.62</option><option value="3.71">ดาวอังคาร — 3.71</option><option value="24.79">ดาวพฤหัส — 24.79</option></select>
+            </div>
+            <div class="center-row"><button class="calc" onclick="projCalculate()">ประมวลผล</button></div>
+            <div id="projOut" class="result"></div>
+          </div>
+
+          <div class="tool-card">
+            <h3>กราฟวิถีและแอนิเมชัน</h3>
+            <div class="graph-wrap">
+              <svg id="trajSVG" class="svg-full" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid meet">
+                <rect width="800" height="320" fill="#f6fbff"></rect>
+                <g id="trajPlot"></g>
+                <g id="trajBall"></g>
+              </svg>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button class="calc" onclick="plotTrajectory()">วาดกราฟวิถี</button>
+              <button class="calc" style="background:var(--accent)" onclick="playTrajectory()">เล่นแอนิเมชัน</button>
+              <button class="calc" style="background:#94a3b8" onclick="stopTrajectory()">หยุด</button>
+            </div>
+            <div class="small muted" style="margin-top:8px">สมการตำแหน่ง: x(t)=v₀ cosθ·t , y(t)=v₀ sinθ·t − ½ g t²</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CIRCUITS -->
+      <section class="module" id="circuits">
+        <h2>วงจรไฟฟ้า (ไฟฟ้ากระแสตรง)</h2>
+        <p class="lead">กฎของโอห์ม: V = I·R ; กำลังไฟฟ้า: P = V·I = I²R = V²/R ; พลังงานไฟฟ้า: E = P·t</p>
+
+        <div class="tools-grid">
+          <div class="tool-card">
+            <h3>กฎของโอห์ม (คำนวณแรงดันและกำลัง)</h3>
+            <div class="field"><label>กระแสไฟฟ้า I (แอมแปร์, A)</label><input id="ohmI" type="number" step="any" value="2"></div>
+            <div class="field"><label>ความต้านทาน R (โอห์ม, Ω)</label><input id="ohmR" type="number" step="any" value="10"></div>
+            <div class="center-row"><button class="calc" onclick="calcOhm()">ประมวลผล (V, P)</button></div>
+            <div id="ohmOut" class="result"></div>
+          </div>
+
+          <div class="tool-card">
+            <h3>หาแรงดันไฟฟ้า (V = I·R)</h3>
+            <div class="field"><label>กระแสไฟฟ้า I (A)</label><input id="findV_I" type="number" step="any" placeholder="ใส่ค่า I"></div>
+            <div class="field"><label>ความต้านทาน R (Ω)</label><input id="findV_R" type="number" step="any" placeholder="ใส่ค่า R"></div>
+            <div class="center-row"><button class="calc" onclick="calcVoltage()">คำนวณแรงดัน V</button></div>
+            <div id="findVOut" class="result"></div>
+          </div>
+
+          <div class="tool-card">
+            <h3>หากระแสไฟฟ้า (I = V / R)</h3>
+            <div class="field"><label>แรงดัน V (V)</label><input id="findI_V" type="number" step="any" placeholder="ใส่ค่า V"></div>
+            <div class="field"><label>ความต้านทาน R (Ω)</label><input id="findI_R" type="number" step="any" placeholder="ใส่ค่า R"></div>
+            <div class="center-row"><button class="calc" onclick="calcCurrent()">คำนวณกระแส I</button></div>
+            <div id="findIOut" class="result"></div>
+          </div>
+
+          <div class="tool-card">
+            <h3>คำนวณค่าไฟฟ้า (Energy & Cost)</h3>
+            <div class="muted">ใส่ กำลัง P (W) โดยตรง หรือกรอก V และ I เพื่อคำนวณกำลัง</div>
+            <div class="field"><label>กำลัง P (วัตต์, W) — (ถ้ามี)</label><input id="billP" type="number" step="any" placeholder="ตัวอย่าง: 1500"></div>
+            <div class="field"><label>แรงดัน V (โวลต์, V) — (ถ้าไม่ใส่ P ให้ใส่ V และ I)</label><input id="billV" type="number" step="any" placeholder="ตัวอย่าง: 220"></div>
+            <div class="field"><label>กระแส I (แอมแปร์, A) — (ถ้าไม่ใส่ P ให้ใส่ V และ I)</label><input id="billI" type="number" step="any" placeholder="ตัวอย่าง: 6.82"></div>
+            <div class="field"><label>เวลาใช้งาน t (ชั่วโมง, h)</label><input id="billT" type="number" step="any" value="1"></div>
+            <div class="field"><label>อัตราค่าไฟ (บาทต่อหน่วย = บาท/kWh)</label><input id="billRate" type="number" step="any" value="4.00"></div>
+            <div class="center-row"><button class="calc" onclick="calcElectricBill()">คำนวณค่าไฟ</button></div>
+            <div id="billOut" class="result"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RESISTOR -->
+      <section class="module" id="resistor">
+        <h2>การถอดรหัสสีตัวต้านทาน (4 แถบ)</h2>
+        <p class="lead">แถบ 1–2 = เลขหลัก ; แถบ 3 = ตัวคูณ ; แถบ 4 = ความคลาดเคลื่อน (tolerance)</p>
+
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <div class="tool-card" style="flex:1;min-width:280px;">
+            <h3>เลือกสีแถบและคำนวณค่า</h3>
+            <div class="field"><label>แถบที่ 1 (หลัก 1)</label><select id="res1"></select></div>
+            <div class="field"><label>แถบที่ 2 (หลัก 2)</label><select id="res2"></select></div>
+            <div class="field"><label>แถบที่ 3 (ตัวคูณ)</label><select id="res3"></select></div>
+            <div class="field"><label>แถบที่ 4 (ความคลาดเคลื่อน)</label><select id="res4"></select></div>
+            <div class="center-row"><button class="calc" onclick="calcResistor()">ประมวลผล</button></div>
+            <div id="resOut" class="result"></div>
+          </div>
+
+          <div class="tool-card" style="flex:1;min-width:240px;">
+            <h3>ตัวอย่าง</h3>
+            <p class="muted">ตัวอย่าง: แดง(2) − ม่วง(7) − ส้ม(×10³) − ทอง(±5%) → R = (27)×10³ = 27 กิโลโอห์ม (kΩ) ±5%</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- MOMENTUM -->
+      <section class="module" id="momentum">
+        <h2>โมเมนตัมเชิงเส้นและการชน</h2>
+        <p class="lead">พิจารณา p = m·v , อิมพัลส์ Δp = F·Δt ; การชนแบบยืดหยุ่นและไม่ยืดหยุ่น (1 มิติ)</p>
+
+        <div class="tools-grid">
+          <div class="tool-card">
+            <h3>คำนวณโมเมนตัม</h3>
+            <div class="field"><label>มวล m (กิโลกรัม, kg)</label><input id="momM" type="number" step="any" value="2"></div>
+            <div class="field"><label>ความเร็ว v (เมตรต่อวินาที, m/s)</label><input id="momV" type="number" step="any" value="3"></div>
+            <div class="center-row"><button class="calc" onclick="calcMomentum()">ประมวลผล</button></div>
+            <div id="momOut" class="result"></div>
+          </div>
+
+          <div class="tool-card">
+            <h3>การชนในแนวหนึ่งมิติ (1D)</h3>
+            <div class="field"><label>มวล m₁ (kg)</label><input id="colM1" type="number" step="any" value="2"></div>
+            <div class="field"><label>ความเร็วก่อนชน v₁ (m/s)</label><input id="colV1" type="number" step="any" value="5"></div>
+            <div class="field"><label>มวล m₂ (kg)</label><input id="colM2" type="number" step="any" value="3"></div>
+            <div class="field"><label>ความเร็วก่อนชน v₂ (m/s)</label><input id="colV2" type="number" step="any" value="0"></div>
+            <div class="field"><label>รูปแบบการชน</label><select id="colType"><option value="ยืดหยุ่น">ยืดหยุ่น (Elastic)</option><option value="ไม่ยืดหยุ่น">ไม่ยืดหยุ่น (Perfectly Inelastic)</option></select></div>
+            <div class="center-row"><button class="calc" onclick="calcCollision()">ประมวลผล</button></div>
+            <div id="colOut" class="result"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CIRCULAR -->
+      <section class="module" id="circular">
+        <h2>การเคลื่อนที่แบบวงกลม</h2>
+        <p class="lead">แรงสู่ศูนย์กลาง F₍c₎ = m v² / r ; มุมแบงก์ tanθ = v² / (r g)</p>
+
+        <div class="tools-grid">
+          <div class="tool-card">
+            <h3>แรงสู่ศูนย์กลาง</h3>
+            <div class="field"><label>มวล m (kg)</label><input id="circM" type="number" step="any" value="1"></div>
+            <div class="field"><label>ความเร็ว v (m/s)</label><input id="circV" type="number" step="any" value="10"></div>
+            <div class="field"><label>รัศมี r (m)</label><input id="circR" type="number" step="any" value="5"></div>
+            <div class="center-row"><button class="calc" onclick="calcFc()">ประมวลผล</button></div>
+            <div id="circOut" class="result"></div>
+          </div>
+
+          <div class="tool-card">
+            <h3>มุมแบงก์</h3>
+            <div class="field"><label>ความเร็ว v (m/s)</label><input id="bankV" type="number" step="any" value="10"></div>
+            <div class="field"><label>รัศมี r (m)</label><input id="bankR" type="number" step="any" value="50"></div>
+            <div class="center-row"><button class="calc" onclick="calcBankAngle()">ประมวลผล</button></div>
+            <div id="bankOut" class="result"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- OPTICS -->
+      <section class="module" id="optics">
+        <h2>ออปติกส์ — เลนส์บาง</h2>
+        <p class="lead">สูตรเลนส์บาง: 1/f = 1/dₒ + 1/dᵢ ; การขยาย M = hᵢ / hₒ = − dᵢ / dₒ ; สูตร Lensmaker สำหรับ f</p>
+
+        <div class="tools-grid">
+          <div class="tool-card">
+            <h3>สมการเลนส์บาง</h3>
+            <div class="field"><label>ระยะวัตถุ dₒ (เมตร, m)</label><input id="lensDo" type="number" step="any" value="0.3"></div>
+            <div class="field"><label>ความยาวโฟกัส f (เมตร, m)</label><input id="lensF" type="number" step="any" value="0.15"></div>
+            <div class="center-row"><button class="calc" onclick="calcLens()">ประมวลผล</button></div>
+            <div id="lensOut" class="result"></div>
+          </div>
+
+          <div class="tool-card">
+            <h3>สูตร Lensmaker (ประมาณ)</h3>
+            <div class="field"><label>ดัชนีหักเห n</label><input id="lensN" type="number" step="any" value="1.5"></div>
+            <div class="field"><label>รัศมีผิวด้านหน้า R₁ (m)</label><input id="lensR1" type="number" step="any" value="0.2"></div>
+            <div class="field"><label>รัศมีผิวด้านหลัง R₂ (m)</label><input id="lensR2" type="number" step="any" value="-0.2"></div>
+            <div class="center-row"><button class="calc" onclick="calcLensmaker()">ประมวลผล</button></div>
+            <div id="lensmakerOut" class="result"></div>
+          </div>
+
+          <div class="tool-card" style="grid-column:1 / -1">
+            <h3>แผนภาพลำแสง (Ray diagram) สำหรับเลนส์นูน</h3>
+            <div class="muted">ตัวแปร: dₒ = ระยะวัตถุ (m) ; f = ความยาวโฟกัส (m) ; ผลลัพธ์: dᵢ, M และประเภทภาพ (จริง/เสมือน)</div>
+            <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+              <div class="field" style="flex:1;min-width:160px"><label>ระยะวัตถุ dₒ (m)</label><input id="rayDo" type="number" step="any" value="0.4"></div>
+              <div class="field" style="flex:1;min-width:160px"><label>ความยาวโฟกัส f (m)</label><input id="rayF" type="number" step="any" value="0.15"></div>
+              <div class="center-row" style="flex-basis:100%"><button class="calc" onclick="drawRay()">สร้างแผนภาพ</button></div>
+            </div>
+            <div id="rayArea" class="graph-wrap" style="margin-top:12px"></div>
+            <div id="rayOut" class="result" style="margin-top:8px"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ENERGY -->
+      <section class="module" id="energy">
+        <h2>งานและพลังงาน</h2>
+        <p class="lead">งาน: W = F·s (จูล, J) ; พลังงานจลน์: KE = ½ m v² ; พลังงานศักย์: U = m g h ; กำลัง: P = W / t</p>
+
+        <div class="tools-grid">
+          <div class="tool-card">
+            <h3>คำนวณงาน</h3>
+            <div class="field"><label>แรง F (นิวตัน, N)</label><input id="workF" type="number" step="any" value="10"></div>
+            <div class="field"><label>ระยะ s (เมตร, m)</label><input id="workS" type="number" step="any" value="2"></div>
+            <div class="center-row"><button class="calc" onclick="calcWork()">ประมวลผล</button></div>
+            <div id="workOut" class="result"></div>
+          </div>
+
+          <div class="tool-card">
+            <h3>พลังงานจลน์</h3>
+            <div class="field"><label>มวล m (kg)</label><input id="keM" type="number" step="any" value="1"></div>
+            <div class="field"><label>ความเร็ว v (m/s)</label><input id="keV" type="number" step="any" value="10"></div>
+            <div class="center-row"><button class="calc" onclick="calcKE()">ประมวลผล</button></div>
+            <div id="keOut" class="result"></div>
+          </div>
+
+          <div class="tool-card">
+            <h3>พลังงานศักย์</h3>
+            <div class="field"><label>มวล m (kg)</label><input id="peM" type="number" step="any" value="1"></div>
+            <div class="field"><label>ความสูง h (m)</label><input id="peH" type="number" step="any" value="2"></div>
+            <div class="center-row"><button class="calc" onclick="calcPE()">ประมวลผล</button></div>
+            <div id="peOut" class="result"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- GASES -->
+      <section class="module" id="gases">
+        <h2>สมบัติของแก๊สและเทอร์โมไดนามิกส์พื้นฐาน</h2>
+        <p class="lead">กฎแก๊สอุดมคติ: pV = nRT (R = 8.314 J·mol⁻¹·K⁻¹) ; พลังงานภายในสำหรับโมโนอะตอม: U = 3/2 nRT ; กฎข้อที่หนึ่ง: ΔU = Q − W</p>
+
+        <div class="tools-grid">
+          <div class="tool-card">
+            <h3>กฎแก๊สอุดมคติ</h3>
+            <div class="field"><label>จำนวนสาร n (mol)</label><input id="gasN" type="number" step="any" value="1"></div>
+            <div class="field"><label>อุณหภูมิ T (K)</label><input id="gasT" type="number" step="any" value="300"></div>
+            <div class="field"><label>ปริมาตร V (m³)</label><input id="gasV" type="number" step="any" value="0.024"></div>
+            <div class="center-row"><button class="calc" onclick="calcGas()">ประมวลผล</button></div>
+            <div id="gasOut" class="result"></div>
+          </div>
+
+          <div class="tool-card">
+            <h3>พลังงานภายในของแก๊ส</h3>
+            <div class="field"><label>n (mol)</label><input id="gasUn" type="number" step="any" value="1"></div>
+            <div class="field"><label>T (K)</label><input id="gasUt" type="number" step="any" value="300"></div>
+            <div class="center-row"><button class="calc" onclick="calcGasU()">ประมวลผล</button></div>
+            <div id="gasUOut" class="result"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- GRAVITY -->
+      <section class="module" id="gravity">
+        <h2>แรงโน้มถ่วงบนดาวต่าง ๆ</h2>
+        <p class="lead">คำนวณน้ำหนัก W = m·g โดย g กำหนดตามดาว/บริวารที่เลือก</p>
+
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <div class="tool-card" style="flex:1;min-width:320px">
+            <div class="field"><label>วัตถุท้องฟ้า (เลือก)</label>
+              <select id="planetSelect">
+                <option value="274">ดวงอาทิตย์ — 274 m/s²</option>
+                <option value="3.7">ดาวพุธ — 3.7 m/s²</option>
+                <option value="8.87">ศุกร์ — 8.87 m/s²</option>
+                <option value="9.81" selected>โลก — 9.81 m/s²</option>
+                <option value="1.62">ดวงจันทร์ (Luna) — 1.62 m/s²</option>
+                <option value="3.71">ดาวอังคาร — 3.71 m/s²</option>
+                <option value="24.79">ดาวพฤหัส — 24.79 m/s²</option>
+                <option value="10.44">ดาวเสาร์ — 10.44 m/s²</option>
+                <option value="8.69">ดาวยูเรนัส — 8.69 m/s²</option>
+                <option value="11.15">ดาวเนปจูน — 11.15 m/s²</option>
+                <option value="1.80">ไอโอ — 1.80 m/s²</option>
+                <option value="1.43">แกนีมีด — 1.43 m/s²</option>
+                <option value="1.35">ไททัน — 1.35 m/s²</option>
+                <option value="1.24">คัลลิสโต — 1.24 m/s²</option>
+                <option value="1.31">ยูโรปา — 1.31 m/s²</option>
+              </select>
+            </div>
+            <div class="field"><label>มวล m (กิโลกรัม, kg)</label><input id="massW" type="number" step="any" value="70"></div>
+            <div class="center-row"><button class="calc" onclick="calcWeight()">ประมวลผล</button></div>
+            <div id="weightOut" class="result"></div>
+          </div>
+          <div class="tool-card" style="flex:1;min-width:220px">
+            <h3>ค่าความเร่งโน้มถ่วงที่ใช้</h3>
+            <p class="small muted">รายการ: ดวงอาทิตย์ 274 , พุธ 3.7 , ศุกร์ 8.87 , โลก 9.81 , ดวงจันทร์ 1.62 , อังคาร 3.71 , พฤหัส 24.79 , เสาร์ 10.44 , ยูเรนัส 8.69 , เนปจูน 11.15 , ไอโอ 1.80 , แกนีมีด 1.43 , ไททัน 1.35 , คัลลิสโต 1.24 , ยูโรปา 1.31 (หน่วย m/s²)</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- end sections -->
+    </div> <!-- /sections -->
+
+    <!-- เครดิตผู้จัดทำ -->
+    <div class="credit" role="contentinfo">
+      <h2>คณะผู้จัดทำ</h2>
+      <p>นายพงษ์ฐกร ดอนลาดลี &nbsp;&nbsp; เลขที่ 9</p>
+      <p>นายพิชากร หรหูล &nbsp;&nbsp; เลขที่ 10</p>
+      <p>นายรัชชานนท์ บรรจโรจน์ &nbsp;&nbsp; เลขที่ 15</p>
+      <p>นายศุภวิทย์ เสร็จสวัสดิ์ &nbsp;&nbsp; เลขที่ 16</p>
+      <p style="margin-top:10px;font-weight:700;">ชั้นมัธยมศึกษาปีที่ 3/10</p>
+    </div>
+
+  </div> <!-- /container -->
+
+  <button class="backtop" onclick="window.scrollTo({top:0,behavior:'smooth'})">ขึ้นบน</button>
+
+<script>
+/* Helper */
+function el(id){return document.getElementById(id)}
+function toNum(v){ const x=parseFloat(v); return isFinite(x)?x:NaN}
+function round(x){ return (Math.round(x*1e6)/1e6).toString() }
+
+/* show result / error (สีแดง) */
+function showResult(targetId, html){
+  const t = el(targetId);
+  if(!t) return;
+  t.classList.remove('error');
+  t.innerHTML = html;
+}
+function showError(targetId, message){
+  const t = el(targetId);
+  if(!t) return;
+  t.classList.add('error');
+  t.innerHTML = `<div>${message}</div>`;
+}
+
+/* Top nav behavior (scroll to section) */
+document.querySelectorAll('.cat-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const target = btn.dataset.target;
+    if(target){
+      const sec = document.getElementById(target);
+      if(sec) sec.scrollIntoView({behavior:'smooth', block:'start'});
+    }
+  });
+});
+
+/* --------------------
+   MECHANICS
+   -------------------- */
+function calcLever(){
+  const F1=toNum(el('leverF1').value), L1=toNum(el('leverL1').value), L2=toNum(el('leverL2').value);
+  if(!isFinite(F1) || !isFinite(L1) || !isFinite(L2) || L2===0){
+    showError('leverOut','กรุณากรอกค่า F₁, L₁ และ L₂ ให้ถูกต้อง (L₂ ต้องไม่เป็น 0)');
+    return;
+  }
+  const F2 = (L1/L2)*F1;
+  showResult('leverOut',`ค่าแรงด้านที่สอง F₂ = ${round(F2)} นิวตัน (N)<br><span class="small muted">สูตร: F₁·L₁ = F₂·L₂</span>`);
+}
+function calcPulley(){
+  const W=toNum(el('pulleyW').value), type=el('pulleyKind').value;
+  if(!isFinite(W)){ showError('pulleyOut','กรุณากรอกค่า W (นิวตัน)'); return; }
+  if(type==='ตายตัว'){ showResult('pulleyOut',`รอกตายตัว: แรงยก = แรงตก = ${round(W)} นิวตัน (N)`); }
+  else { showResult('pulleyOut',`รอกเคลื่อนที่ (อุดมคติ): แรงยก F ≈ W/2 = ${round(W/2)} นิวตัน (N)`); }
+}
+function calcInclined(){
+  const m=toNum(el('inclineM').value), theta=toNum(el('inclineTheta').value);
+  if(!isFinite(m) || !isFinite(theta)){ showError('inclinedOut','กรุณากรอกมวล (kg) และมุม θ (°) ให้ถูกต้อง'); return; }
+  const g=9.81;
+  const F = m*g*Math.sin(theta*Math.PI/180);
+  showResult('inclinedOut',`แรงตามระนาบ F = m·g·sinθ = ${round(F)} นิวตัน (N)<br><span class="small muted">g = ${g} m/s²</span>`);
+}
+function calcWheel(){
+  const R=toNum(el('wheelR').value), r=toNum(el('wheelr').value);
+  if(!isFinite(R)||!isFinite(r)||r===0){ showError('wheelOut','กรุณากรอก R และ r ให้ถูกต้อง (r ต้องไม่เป็น 0)'); return; }
+  const MA = R/r;
+  showResult('wheelOut',`อัตราทดเชิงกล MA = R/r = ${round(MA)}<br><span class="small muted">หน่วย: ไม่มี (อัตราส่วน)</span>`);
+}
+function calcWedge(){
+  const L=toNum(el('wedgeL').value), t=toNum(el('wedget').value);
+  if(!isFinite(L)||!isFinite(t)||t===0){ showError('wedgeOut','กรุณากรอก L และ t ให้ถูกต้อง (t ต้องไม่เป็น 0)'); return; }
+  showResult('wedgeOut',`ประมาณ MA ≈ L/t = ${round(L/t)}<br><span class="small muted">L และ t มีหน่วยเป็น เมตร (m)</span>`);
+}
+function calcScrew(){
+  const r=toNum(el('screwR').value), p=toNum(el('screwP').value);
+  if(!isFinite(r)||!isFinite(p)||p===0){ showError('screwOut','กรุณากรอก r และ p ให้ถูกต้อง (p ต้องไม่เป็น 0)'); return; }
+  const MA = (2*Math.PI*r)/p;
+  showResult('screwOut',`ประมาณ MA ≈ (2π·r)/p = ${round(MA)}<br><span class="small muted">หน่วย: ไม่มี (อัตราส่วน)</span>`);
+}
+
+/* --------------------
+   PROJECTILE (trajectory + animation)
+   -------------------- */
+let traj = []; let trajAnim = null;
+function projCalculate(){
+  const v0=toNum(el('projV0').value), thetaDeg=toNum(el('projTheta').value), g=toNum(el('projG').value);
+  if(!isFinite(v0) || !isFinite(thetaDeg) || !isFinite(g)){ showError('projOut','กรุณากรอกความเร็ว v₀, มุม θ และ g ให้ครบถ้วน'); return; }
+  const theta = thetaDeg*Math.PI/180;
+  const vx = v0*Math.cos(theta), vy = v0*Math.sin(theta);
+  const T = 2*vy/g;
+  const R = (v0*v0*Math.sin(2*theta))/g;
+  const H = (vy*vy)/(2*g);
+  showResult('projOut',`vₓ = ${round(vx)} m/s<br>vᵧ = ${round(vy)} m/s<br>เวลาในอากาศ T = ${round(T)} s<br>ระยะทางสูงสุด R = ${round(R)} m<br>ความสูงสูงสุด hₘₐₓ = ${round(H)} m`);
+  traj = [];
+  const steps = 160;
+  for(let i=0;i<=steps;i++){
+    const t = T*(i/steps);
+    const x = vx*t;
+    const y = vy*t - 0.5*g*t*t;
+    traj.push({t,x,y});
+  }
+  plotTrajectory();
+}
+function plotTrajectory(){
+  const svg = el('trajSVG');
+  const plot = svg.querySelector('#trajPlot');
+  const ball = svg.querySelector('#trajBall');
+  plot.innerHTML=''; ball.innerHTML='';
+  if(!traj || traj.length===0){ showError('projOut','ยังไม่มีข้อมูลวิถี — กรุณากด "ประมวลผล" ก่อน'); return; }
+  const xs = traj.map(p=>p.x), ys = traj.map(p=>p.y);
+  const maxX = Math.max(...xs), maxY = Math.max(...ys);
+  const pad = 40; const vw=800; const vh=320;
+  const sx = (vw-pad*2)/(maxX||1); const sy = (vh-pad*2)/(maxY||1);
+  const axisX = document.createElementNS('http://www.w3.org/2000/svg','line');
+  axisX.setAttribute('x1',pad); axisX.setAttribute('y1',vh-pad); axisX.setAttribute('x2',vw-pad); axisX.setAttribute('y2',vh-pad); axisX.setAttribute('stroke','#dbeafe'); axisX.setAttribute('stroke-width',1);
+  plot.appendChild(axisX);
+  const axisY = document.createElementNS('http://www.w3.org/2000/svg','line');
+  axisY.setAttribute('x1',pad); axisY.setAttribute('y1',vh-pad); axisY.setAttribute('x2',pad); axisY.setAttribute('y2',pad); axisY.setAttribute('stroke','#eef8ff'); axisY.setAttribute('stroke-width',1);
+  plot.appendChild(axisY);
+  const pts = traj.map(p=>{
+    const px = pad + p.x*sx; const py = vh - (pad + Math.max(0,p.y)*sy);
+    return px+','+py;
+  }).join(' ');
+  const poly = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+  poly.setAttribute('points',pts); poly.setAttribute('fill','none'); poly.setAttribute('stroke','#005f99'); poly.setAttribute('stroke-width','2');
+  plot.appendChild(poly);
+}
+function playTrajectory(){
+  if(!traj || traj.length===0){ showError('projOut','ยังไม่มีข้อมูลวิถี — กรุณากด "ประมวลผล" ก่อน'); return; }
+  stopTrajectory();
+  const svg = el('trajSVG');
+  const ball = svg.querySelector('#trajBall');
+  const pad=40, vw=800, vh=320;
+  const xs = traj.map(p=>p.x), ys = traj.map(p=>p.y);
+  const maxX = Math.max(...xs), maxY = Math.max(...ys);
+  const sx = (vw-pad*2)/(maxX||1), sy = (vh-pad*2)/(maxY||1);
+  const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  circle.setAttribute('r',7); circle.setAttribute('fill',getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#ff6a00'); circle.setAttribute('stroke','#fff'); circle.setAttribute('stroke-width',1.2);
+  ball.appendChild(circle);
+  let i=0;
+  function step(){
+    if(i>=traj.length){ trajAnim=null; return; }
+    const p = traj[i];
+    const px = pad + p.x*sx; const py = vh - (pad + Math.max(0,p.y)*sy);
+    circle.setAttribute('cx',px); circle.setAttribute('cy',py);
+    i++;
+    trajAnim = requestAnimationFrame(step);
+  }
+  step();
+}
+function stopTrajectory(){ if(trajAnim) cancelAnimationFrame(trajAnim); trajAnim=null; const svg=el('trajSVG'); svg.querySelector('#trajBall').innerHTML=''; }
+
+/* --------------------
+   CIRCUITS
+   -------------------- */
+function calcOhm(){
+  const I=toNum(el('ohmI').value), R=toNum(el('ohmR').value);
+  if(!isFinite(I) || !isFinite(R)){ showError('ohmOut','กรุณากรอกกระแส I และความต้านทาน R ให้ถูกต้อง'); return; }
+  const V = I*R; const P = V*I;
+  showResult('ohmOut',`แรงดัน V = I·R = ${round(V)} โวลต์ (V)<br>กำลัง P = V·I = ${round(P)} วัตต์ (W)<br><span class="small muted">หรือ P = I²R = ${round(I*I*R)} W</span>`);
+}
+function calcVoltage(){
+  const I = toNum(el('findV_I').value), R = toNum(el('findV_R').value);
+  if(!isFinite(I) || !isFinite(R)){ showError('findVOut','กรุณากรอกค่า กระแส I (A) และ ความต้านทาน R (Ω) ให้ครบ'); return; }
+  const V = I * R;
+  showResult('findVOut',`แรงดัน V = I·R = ${round(V)} โวลต์ (V)`);
+}
+function calcCurrent(){
+  const V = toNum(el('findI_V').value), R = toNum(el('findI_R').value);
+  if(!isFinite(V) || !isFinite(R) || R === 0){ showError('findIOut','กรุณากรอกค่า แรงดัน V (V) และ ความต้านทาน R (Ω) ให้ถูกต้อง (R ≠ 0)'); return; }
+  const I = V / R;
+  showResult('findIOut',`กระแส I = V / R = ${round(I)} แอมแปร์ (A)`);
+}
+function calcElectricBill(){
+  const P_input = toNum(el('billP').value);
+  const V = toNum(el('billV').value);
+  const I = toNum(el('billI').value);
+  const t = toNum(el('billT').value);
+  const rate = toNum(el('billRate').value);
+  if(!isFinite(t) || t < 0){ showError('billOut','กรุณากรอกเวลาใช้งาน t (ชั่วโมง) ให้ถูกต้อง'); return; }
+  if(!isFinite(rate) || rate < 0){ showError('billOut','กรุณากรอกอัตราค่าไฟ (บาท/kWh) ให้ถูกต้อง'); return; }
+  let P = NaN;
+  if(isFinite(P_input) && P_input >= 0){
+    P = P_input;
+  } else {
+    if(isFinite(V) && isFinite(I)){
+      P = V * I;
+    } else {
+      showError('billOut','กรุณากรอกกำลัง P (W) หรือกรอกทั้ง V และ I เพื่อคำนวณกำลัง');
+      return;
+    }
+  }
+  const energy_Wh = P * t; // Wh
+  const energy_kWh = energy_Wh / 1000; // kWh
+  const cost = energy_kWh * rate;
+  showResult('billOut',
+    `กำลังที่ใช้ P = ${round(P)} วัตต์ (W)<br>` +
+    `พลังงาน = ${round(energy_Wh)} วัตต์·ชั่วโมง (Wh) = ${round(energy_kWh)} กิโลวัตต์·ชั่วโมง (kWh)<br>` +
+    `ค่าใช้จ่าย = ${round(cost)} บาท (อัตรา ${round(rate)} บาท/kWh)`
+  );
+}
+
+/* --------------------
+   RESISTOR (4-band)
+   -------------------- */
+const colorDigits = {'ดำ':0,'น้ำตาล':1,'แดง':2,'ส้ม':3,'เหลือง':4,'เขียว':5,'น้ำเงิน':6,'ม่วง':7,'เทา':8,'ขาว':9};
+const colorMult = {'×1':1,'×10':10,'×100':100,'×1k':1e3,'×10k':1e4,'×100k':1e5,'×1M':1e6,'×0.1(ทอง)':0.1,'×0.01(เงิน)':0.01};
+const tolMap = {'ทอง ±5%':'±5%','เงิน ±10%':'±10%','ไม่มี ±20%':'±20%','น้ำตาล ±1%':'±1%','แดง ±2%':'±2%'};
+function initResistor(){
+  const sel1=el('res1'), sel2=el('res2'), sel3=el('res3'), sel4=el('res4');
+  const digits = Object.keys(colorDigits);
+  digits.forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; sel1.appendChild(o); sel2.appendChild(o.cloneNode(true)); });
+  Object.keys(colorMult).forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=k; sel3.appendChild(o); });
+  Object.keys(tolMap).forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=k; sel4.appendChild(o); });
+  sel1.value='แดง'; sel2.value='ม่วง'; sel3.value='×1k'; sel4.value='ทอง ±5%';
+}
+initResistor();
+function calcResistor(){
+  const b1=el('res1').value, b2=el('res2').value, b3=el('res3').value, b4=el('res4').value;
+  if(!(b1 in colorDigits) || !(b2 in colorDigits) || !(b3 in colorMult)){ showError('resOut','กรุณาเลือกสีแถบให้ครบทั้ง 4 แถบ'); return; }
+  const val = (colorDigits[b1]*10 + colorDigits[b2]) * colorMult[b3];
+  showResult('resOut',`ค่าความต้านทาน = ${formatOhm(val)}  ${tolMap[b4] || ''}`);
+}
+function formatOhm(x){
+  if(x>=1e6) return (x/1e6).toFixed(3).replace(/\.?0+$/,'')+' เมกะโอห์ม (MΩ)';
+  if(x>=1e3) return (x/1e3).toFixed(3).replace(/\.?0+$/,'')+' กิโลโอห์ม (kΩ)';
+  return x.toFixed(3).replace(/\.?0+$/,'')+' โอห์ม (Ω)';
+}
+
+/* --------------------
+   MOMENTUM / COLLISION
+   -------------------- */
+function calcMomentum(){ const m=toNum(el('momM').value), v=toNum(el('momV').value); if(!isFinite(m)||!isFinite(v)){ showError('momOut','กรุณากรอกมวล m และความเร็ว v ให้ถูกต้อง'); return;} showResult('momOut',`โมเมนตัม p = m·v = ${round(m*v)} กิโลกรัม·เมตร/วินาที (kg·m/s)`); }
+function calcCollision(){
+  const m1=toNum(el('colM1').value), v1=toNum(el('colV1').value), m2=toNum(el('colM2').value), v2=toNum(el('colV2').value);
+  const t=el('colType').value;
+  if(!isFinite(m1)||!isFinite(v1)||!isFinite(m2)||!isFinite(v2)){ showError('colOut','กรุณากรอกพารามิเตอร์มวลและความเร็วก่อนชนให้ครบ'); return; }
+  if(t==='ไม่ยืดหยุ่น'){ const vf=(m1*v1 + m2*v2)/(m1+m2); showResult('colOut',`ชนแบบไม่ยืดหยุ่น: ความเร็วร่วมหลังชน v = ${round(vf)} m/s`); }
+  else { const v1f = ((m1-m2)/(m1+m2))*v1 + (2*m2/(m1+m2))*v2; const v2f = (2*m1/(m1+m2))*v1 + ((m2-m1)/(m1+m2))*v2; showResult('colOut',`ชนแบบยืดหยุ่น: v₁' = ${round(v1f)} m/s , v₂' = ${round(v2f)} m/s`); }
+}
+
+/* --------------------
+   CIRCULAR
+   -------------------- */
+function calcFc(){ const m=toNum(el('circM').value), v=toNum(el('circV').value), r=toNum(el('circR').value); if(!isFinite(m)||!isFinite(v)||!isFinite(r)||r===0){ showError('circOut','กรุณากรอก m, v, r ให้ถูกต้อง (r ต้องไม่เป็น 0)'); return;} showResult('circOut',`แรงสู่ศูนย์กลาง F_c = m v² / r = ${round(m*v*v/r)} นิวตัน (N)`); }
+function calcBankAngle(){ const v=toNum(el('bankV').value), r=toNum(el('bankR').value); if(!isFinite(v)||!isFinite(r)||r===0){ showError('bankOut','กรุณากรอก v และ r ให้ถูกต้อง (r ต้องไม่เป็น 0)'); return;} const tanTh=v*v/(r*9.81); const deg=Math.atan(tanTh)*180/Math.PI; showResult('bankOut',`tanθ = ${round(tanTh)} → θ = ${round(deg)} °`); }
+
+/* --------------------
+   OPTICS (lens + ray)
+   -------------------- */
+function calcLens(){
+  const do_ = toNum(el('lensDo').value), f = toNum(el('lensF').value);
+  if(!isFinite(do_)||!isFinite(f)||f===0){ showError('lensOut','กรุณากรอก dₒ และ f ให้ถูกต้อง (f ต้องไม่เป็น 0)'); return; }
+  const di = 1 / (1/f - 1/do_);
+  const M = -di / do_;
+  showResult('lensOut',`ระยะภาพ dᵢ = ${round(di)} เมตร (m)<br>กำลังขยาย M = ${round(M)}<br><span class="small muted">สูตร: 1/f = 1/dₒ + 1/dᵢ</span>`);
+}
+function calcLensmaker(){
+  const n=toNum(el('lensN').value), R1=toNum(el('lensR1').value), R2=toNum(el('lensR2').value);
+  if(!isFinite(n)||!isFinite(R1)||!isFinite(R2)){ showError('lensmakerOut','กรุณากรอก n, R₁ และ R₂ ให้ครบถ้วน'); return; }
+  const f = 1 / ((n-1)*(1/R1 - 1/R2));
+  showResult('lensmakerOut',`ความยาวโฟกัส f = ${round(f)} เมตร (m) (จาก Lensmaker)`);
+}
+function drawRay(){
+  const do_ = toNum(el('rayDo').value), f = toNum(el('rayF').value);
+  const area = el('rayArea'); area.innerHTML='';
+  if(!isFinite(do_)||!isFinite(f)){ showError('rayOut','กรุณากรอกระยะวัตถุ dₒ และความยาวโฟกัส f ให้ถูกต้อง'); return; }
+  const w = Math.max(600, area.clientWidth || 700), h = 320;
+  const svgNS='http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNS,'svg'); svg.setAttribute('viewBox',`0 0 ${w} ${h}`); svg.setAttribute('width','100%'); svg.setAttribute('height','100%');
+  const axis = document.createElementNS(svgNS,'line'); axis.setAttribute('x1',0); axis.setAttribute('y1',h/2); axis.setAttribute('x2',w); axis.setAttribute('y2',h/2); axis.setAttribute('stroke','#e6f2ff'); axis.setAttribute('stroke-width',2); svg.appendChild(axis);
+  const cx = w/2;
+  const lens = document.createElementNS(svgNS,'rect'); lens.setAttribute('x',cx-6); lens.setAttribute('y',h*0.12); lens.setAttribute('width',12); lens.setAttribute('height',h*0.76); lens.setAttribute('rx',6); lens.setAttribute('fill','rgba(0,95,153,0.06)'); lens.setAttribute('stroke','#005f99'); svg.appendChild(lens);
+  const scale = Math.max(50, (w*0.45)/Math.max(0.1, Math.max(Math.abs(do_), Math.abs(f))));
+  const ox = cx - do_*scale;
+  const oh = 40;
+  const objLine = document.createElementNS(svgNS,'line'); objLine.setAttribute('x1',ox); objLine.setAttribute('x2',ox); objLine.setAttribute('y1',h/2); objLine.setAttribute('y2',h/2 - oh); objLine.setAttribute('stroke','#ff6a00'); objLine.setAttribute('stroke-width',4); svg.appendChild(objLine);
+  const fpR = document.createElementNS(svgNS,'circle'); fpR.setAttribute('cx',cx + f*scale); fpR.setAttribute('cy',h/2); fpR.setAttribute('r',3); fpR.setAttribute('fill','#005f99'); svg.appendChild(fpR);
+  let di = null;
+  if(f!==0 && do_!==0){
+    di = 1 / (1/f - 1/do_);
+    const ix = cx + di*scale;
+    const ih = Math.abs(di/do_)*oh;
+    const imgLine = document.createElementNS(svgNS,'line'); imgLine.setAttribute('x1',ix); imgLine.setAttribute('x2',ix); imgLine.setAttribute('y1',h/2); imgLine.setAttribute('y2',h/2 - (di>0?ih:-ih)); imgLine.setAttribute('stroke','#8e44ad'); imgLine.setAttribute('stroke-width',4); svg.appendChild(imgLine);
+    const txt = document.createElementNS(svgNS,'text'); txt.setAttribute('x',ix+6); txt.setAttribute('y',h-8); txt.setAttribute('fill','#123'); txt.setAttribute('font-size',12); txt.textContent=`dᵢ = ${round(di)} m`;
+    svg.appendChild(txt);
+  }
+  // rays: principal ray, through center, parallel -> focus
+  const ray1in = document.createElementNS(svgNS,'line'); ray1in.setAttribute('x1',ox); ray1in.setAttribute('y1',h/2 - oh); ray1in.setAttribute('x2',cx-6); ray1in.setAttribute('y2',h/2 - oh); ray1in.setAttribute('stroke','#1e88e5'); ray1in.setAttribute('stroke-width',1.6); svg.appendChild(ray1in);
+  if(f!==0){
+    const ray1out = document.createElementNS(svgNS,'line'); ray1out.setAttribute('x1',cx+6); ray1out.setAttribute('y1',h/2 - oh); ray1out.setAttribute('x2',cx + f*scale); ray1out.setAttribute('y2',h/2); ray1out.setAttribute('stroke','#1e88e5'); ray1out.setAttribute('stroke-width',1.6); svg.appendChild(ray1out);
+  }
+  const txtDo = document.createElementNS(svgNS,'text'); txtDo.setAttribute('x',ox-6); txtDo.setAttribute('y',h-8); txtDo.setAttribute('fill','#333'); txtDo.setAttribute('font-size',12); txtDo.textContent=`dₒ=${do_.toFixed(3)} m`; svg.appendChild(txtDo);
+  const txtF = document.createElementNS(svgNS,'text'); txtF.setAttribute('x',cx+f*scale-6); txtF.setAttribute('y',h/2-10); txtF.setAttribute('fill','#005f99'); txtF.setAttribute('font-size',12); txtF.textContent='f'; svg.appendChild(txtF);
+  area.appendChild(svg);
+  if(di!==null){
+    const M = -di/do_;
+    const type = di>0 ? 'ภาพจริง (real)' : 'ภาพเสมือน (virtual)';
+    showResult('rayOut',`dᵢ = ${round(di)} เมตร (m) , M = ${round(M)} , ประเภทภาพ: ${type}`);
+  } else {
+    showError('rayOut','ไม่สามารถคำนวณ dᵢ ได้ (ตรวจสอบค่า dₒ หรือ f)');
+  }
+}
+
+/* --------------------
+   ENERGY
+   -------------------- */
+function calcWork(){ const F=toNum(el('workF').value), s=toNum(el('workS').value); if(!isFinite(F)||!isFinite(s)){ showError('workOut','กรุณากรอกแรง F และระยะ s ให้ถูกต้อง'); return;} showResult('workOut',`งาน W = F·s = ${round(F*s)} จูล (J)`); }
+function calcKE(){ const m=toNum(el('keM').value), v=toNum(el('keV').value); if(!isFinite(m)||!isFinite(v)){ showError('keOut','กรุณากรอกมวล m และความเร็ว v ให้ถูกต้อง'); return;} showResult('keOut',`KE = ½ m v² = ${round(0.5*m*v*v)} จูล (J)`); }
+function calcPE(){ const m=toNum(el('peM').value), h=toNum(el('peH').value); if(!isFinite(m)||!isFinite(h)){ showError('peOut','กรุณากรอกมวล m และความสูง h ให้ถูกต้อง'); return;} showResult('peOut',`U = m g h = ${round(m*9.81*h)} จูล (J)`); }
+
+/* --------------------
+   GASES
+   -------------------- */
+function calcGas(){ const n=toNum(el('gasN').value), T=toNum(el('gasT').value), V=toNum(el('gasV').value); const R=8.314462618; if(!isFinite(n)||!isFinite(T)||!isFinite(V)||V===0){ showError('gasOut','กรุณากรอก n, T, V ให้ถูกต้อง (V ต้องไม่เป็น 0)'); return;} showResult('gasOut',`ความดัน p = nRT/V = ${round(n*R*T/V)} ปาสกาล (Pa)`); }
+function calcGasU(){ const n=toNum(el('gasUn').value), T=toNum(el('gasUt').value); const R=8.314462618; if(!isFinite(n)||!isFinite(T)){ showError('gasUOut','กรุณากรอก n และ T ให้ถูกต้อง'); return;} showResult('gasUOut',`U = 3/2 n R T = ${round(1.5*n*R*T)} จูล (J)`); }
+
+/* --------------------
+   GRAVITY
+   -------------------- */
+function calcWeight(){ const g=toNum(el('planetSelect').value), m=toNum(el('massW').value); if(!isFinite(g)||!isFinite(m)){ showError('weightOut','กรุณากรอกมวลและเลือกวัตถุท้องฟ้า'); return;} showResult('weightOut',`น้ำหนัก W = m·g = ${round(m*g)} นิวตัน (N) — (g = ${g} m/s²)`); }
+
+/* Initialize resistor options (เรียกเมื่อโหลด) - initResistor() ถูกเรียกแล้วข้างบน */
+
+/* Accessibility: ปุ่ม Enter บนช่องสำคัญทำการคำนวณ */
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Enter'){
+    const activeBtn = document.querySelector('.cat-btn.active');
+    // หากเคอร์เซอร์อยู่ในส่วน projectile ให้คำนวณโพรเจกไทล์
+    if(document.activeElement && (document.activeElement.id==='projV0' || document.activeElement.id==='projTheta')){
+      projCalculate();
+    }
+  }
+});
+
+</script>
+</body>
+</html>
